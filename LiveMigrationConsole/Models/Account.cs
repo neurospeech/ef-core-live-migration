@@ -13,6 +13,13 @@ namespace LiveMigrationConsole.Models
 
         [MaxLength(200)]
         [Index]
-        public string AccountName { get; set; }
+        [OldName("AccountName")]
+        public string DisplayName { get; set; }
+
+        [MaxLength(10)]
+        public string AccountType { get; set; }
+
+        [InverseProperty(nameof(Product.Vendor))]
+        public Product[] VendorProducts { get; set; }
     }
 }

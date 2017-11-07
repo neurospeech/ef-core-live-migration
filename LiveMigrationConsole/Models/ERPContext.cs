@@ -17,5 +17,11 @@ namespace LiveMigrationConsole.Models
 
         public DbSet<Account> Accounts { get; set; }
 
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+
+        }
+
     }
 }

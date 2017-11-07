@@ -39,6 +39,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
         }
 
         public string CopyFrom { get; internal set; }
+        public bool IsIdentity { get; internal set; }
 
         public override bool Equals(object obj)
         {
@@ -51,10 +52,10 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 if (DataLength != dest.DataLength)
                     return false;
 
-                if (NumericPrecision != dest.NumericPrecision)
-                    return false;
-                if (NumericScale != NumericScale)
-                    return false;
+                //if (NumericPrecision != dest.NumericPrecision)
+                //    return false;
+                //if (NumericScale != NumericScale)
+                //    return false;
 
                 return true;
             }

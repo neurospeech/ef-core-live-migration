@@ -14,9 +14,7 @@ namespace LiveMigrationConsole
 
             using (var db = new ERPContext(options.Options)) {
 
-                db.Database.EnsureCreated();
-
-                MigrationHelper.ForSqlServer(db).Migrate();
+                MigrationHelper.ForSqlServer(db).MigrateAsync().Wait();
                 
             }
 

@@ -18,6 +18,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
         {
             var cmd = context.Database.GetDbConnection().CreateCommand();
             cmd.CommandText = command;
+            cmd.Transaction = Transaction;
             if (plist != null)
             {
                 foreach (var p in plist)
@@ -54,6 +55,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                     col.DataLength = reader.GetValue<int>("DataLength");
                     col.NumericPrecision = reader.GetValue<decimal?>("NumericPrecision");
                     col.NumericScale = reader.GetValue<decimal?>("NumericScale");
+                    col.IsIdentity = reader.GetValue<bool>("IsIdentity");
 
                     columns.Add(col);
                 }
@@ -62,16 +64,15 @@ namespace NeuroSpeech.EFCoreLiveMigration
             return columns;
         }
 
-        public async override Task SyncSchema(string name, List<SqlColumn> columns)
+        public async override Task SyncSchema(string schema, string name, List<SqlColumn> columns)
         {
 
-            string createTable = $"IF NOT EXISTS (SELECT * FROM sysobjects WHERE Name='{name}' AND xtype='U')"
-                + $" CREATE TABLE {name} ({ string.Join(",", columns.Where(x => x.IsPrimaryKey).Select(c => ToColumn(c))) })";
+            schema = string.IsNullOrWhiteSpace(schema) ? "dbo" : schema;
+            
+            string createTable = $"IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{name}' AND TABLE_SCHEMA = '{schema}')"
+                + $" CREATE TABLE {schema}.{name} ({ string.Join(",", columns.Where(x => x.IsPrimaryKey).Select(c => ToColumn(c))) })";
 
-            using (var cmd = CreateCommand(createTable))
-            {
-                var n = await cmd.ExecuteNonQueryAsync();
-            }
+            await RunAsync(createTable);
 
             var destColumns = await GetCommonSchemaAsync(name);
 
@@ -95,9 +96,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                         continue;
                     }
 
-                    using (var cmd = CreateCommand($"EXEC sp_rename '{name}.{dest.ColumnName}', '{name}.{column.ColumnName}'")) {
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    await RunAsync($"EXEC sp_rename '{name}.{dest.ColumnName}', '{column.ColumnName}'");
                     dest.ColumnName = column.ColumnName;
                     
                 }
@@ -111,19 +110,13 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
                 column.CopyFrom = $"{dest.ColumnName}_{m}";
 
-                using (var cmd = CreateCommand($"EXEC sp_rename '{name}.{dest.ColumnName}', '{dest.CopyFrom}'"))
-                {
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                await RunAsync($"EXEC sp_rename '{name}.{dest.ColumnName}', '{column.CopyFrom}'");
 
             }
 
             foreach (var column in columnsToAdd)
             {
-                using (var cmd = CreateCommand($"ALTER TABLE {name} ADD " + ToColumn(column)))
-                {
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                await RunAsync($"ALTER TABLE {name} ADD " + ToColumn(column));
             }
 
             Console.WriteLine($"Table {name} sync complete");
@@ -135,9 +128,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 foreach (var copy in copies)
                 {
                     var update = $"UPDATE {name} SET {copy.ColumnName} = {copy.CopyFrom};";
-                    using (var cmd = CreateCommand(update)) {
-                        await cmd.ExecuteNonQueryAsync();
-                    }
+                    await RunAsync(update);
                 }
             }
         }
@@ -174,8 +165,74 @@ namespace NeuroSpeech.EFCoreLiveMigration
             else
             {
                 name += " PRIMARY KEY ";
+                if (c.IsIdentity) {
+                    name += " Identity ";
+                }
             }
             return name;
+        }
+
+        internal override async Task SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes)
+        {
+
+            var destIndexes = await GetIndexesAsync(tableName);
+
+            foreach (var index in indexes) {
+                var name = index.Relational().Name;
+
+                var columns = index.Properties.Select(p => p.Relational().ColumnName).ToArray();
+
+                var newColumns = columns.ToJoinString();
+
+                var existing = destIndexes.FirstOrDefault(x => x.Name == name);
+                if (existing != null) {
+                    // see if all are ok...
+                    var existingColumns = existing.Columns.ToJoinString();
+
+                    if (existingColumns.EqualsIgnoreCase(newColumns))
+                        continue;
+
+                    // rename old index... 
+                    var n = $"{name}_{System.DateTime.UtcNow.Ticks}";
+
+                    await RunAsync($"EXEC sp_rename @FromName, @ToName, @Type", new Dictionary<string, object> {
+                        { "@FromName", tableName + "." + name },
+                        { "@ToName", n},
+                        { "@Type", "INDEX" }
+                    });
+                }
+
+                // lets create index...
+
+                await RunAsync($"CREATE NONCLUSTERED INDEX {name} ON {tableName} ({ newColumns })");
+            }
+        }
+
+        public override async Task<List<SqlIndex>> GetIndexesAsync(string name)
+        {
+            List<SqlIndex> list = new List<SqlIndex>();
+            using (var reader = await ReadAsync(Scripts.SqlServerGetIndexes, new Dictionary<string, object> {
+                { "@TableName", name }
+            })) {
+
+                while (await reader.ReadAsync()) {
+                    var index = new SqlIndex();
+
+                    index.Name = reader.GetValue<string>("IndexName");
+                    index.Columns = new string[] {
+                        reader.GetValue<string>("ColumnName")
+                    };
+
+                    list.Add(index);
+                }
+
+                list = list.GroupBy(x => x.Name).Select(x => new SqlIndex {
+                    Name = x.Key,
+                    Columns = x.SelectMany( c => c.Columns ).ToArray()
+                }).ToList();
+
+            }
+            return list;
         }
     }
 }

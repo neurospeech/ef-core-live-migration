@@ -14,6 +14,8 @@ namespace NeuroSpeech.EFCoreLiveMigration
     {
         protected readonly DbContext context;
 
+        public DbTransaction Transaction { get; private set; }
+
         public MigrationHelper(DbContext context)
         {
             this.context = context;
@@ -27,27 +29,77 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
         public async Task MigrateAsync() {
 
-            foreach (var entity in context.Model.GetEntityTypes()) {
+            await context.Database.EnsureCreatedAsync();
+
+            foreach (var entity in context.Model.GetEntityTypes())
+            {
                 var relational = entity.Relational();
 
-                var name = $"[{relational.Schema}].[{relational.TableName}]";
+                var columns = entity.GetProperties().Select(x => CreateColumn(x)).ToList();
 
-                var columns = entity.GetProperties().Select(x=> new SqlColumn {
-                     CLRType = x.ClrType,
-                     ColumnDefault = x.Relational().DefaultValueSql,
-                      ColumnName = x.Relational().ColumnName,
-                      DataLength = x.GetMaxLength() ?? 0,
-                       DataType = x.Relational().ColumnType,
-                        IsNullable = x.IsColumnNullable(),
-                         IsPrimaryKey = x.IsPrimaryKey()
-                }).ToList();
+                var indexes = entity.GetIndexes();
+                
+                
 
-                await SyncSchema(name, columns);
+                //using (var tx = new TransactionScope(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
+                //{
+                    try
+                    {
+                        
+                        context.Database.OpenConnection();
+                        using (var tx = context.Database.GetDbConnection().BeginTransaction(System.Data.IsolationLevel.Serializable))
+                        {
+                            this.Transaction = tx;
+                            await SyncSchema(relational.Schema, relational.TableName, columns);
+
+                        await SyncIndexes(relational.Schema, relational.TableName, indexes);
+
+                            tx.Commit();
+                        }
+                    }
+                    finally {
+                        context.Database.CloseConnection();
+                    }
+                    //tx.Complete();
+                //}
             }
+
+            
 
         }
 
+        internal abstract Task SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes);
+
+        private static SqlColumn CreateColumn(IProperty x)
+        {
+            var r = new SqlColumn
+            {
+                CLRType = x.ClrType,
+                ColumnDefault = x.Relational().DefaultValueSql,
+                ColumnName = x.Relational().ColumnName,
+                DataLength = x.GetMaxLength() ?? 0,
+                DataType = x.GetColumnType(),
+                IsNullable = x.IsColumnNullable(),
+                IsPrimaryKey = x.IsPrimaryKey()
+            };
+
+            var rr = x.Relational();
+            
+
+            r.IsIdentity = x.ValueGenerated == ValueGenerated.OnAdd;
+
+            r.OldNames = x.GetOldNames();
+
+            return r;
+        }
+
         public abstract DbCommand CreateCommand(String command, Dictionary<string, object> plist = null);
+
+        public async Task<int> RunAsync(string command, Dictionary<string, object> plist = null) {
+            using (var cmd = CreateCommand(command, plist)) {
+                return await cmd.ExecuteNonQueryAsync();
+            }
+        }
 
         public async Task<SqlRowSet> ReadAsync(string command, Dictionary<string, object> plist)
         {
@@ -56,7 +108,9 @@ namespace NeuroSpeech.EFCoreLiveMigration
         }
 
         public abstract Task<List<SqlColumn>> GetCommonSchemaAsync(string name);
-        public abstract Task SyncSchema(string name, List<SqlColumn> schemaTable);
+        public abstract Task SyncSchema(string schema, string table, List<SqlColumn> schemaTable);
+
+        public abstract Task<List<SqlIndex>> GetIndexesAsync(string name);
 
 
     }
