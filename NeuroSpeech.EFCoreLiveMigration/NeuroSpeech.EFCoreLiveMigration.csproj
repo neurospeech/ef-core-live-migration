@@ -10,6 +10,7 @@
     <PackageProjectUrl>https://github.com/neurospeech/ef-core-live-migration</PackageProjectUrl>
     <RepositoryUrl>https://github.com/neurospeech/ef-core-live-migration</RepositoryUrl>
     <PackageTags>EF, Core, Live Migration</PackageTags>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
