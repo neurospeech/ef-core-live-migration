@@ -1,0 +1,27 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace NeuroSpeech.EFCoreLiveMigration
+{
+	class Scripts
+	{
+
+		public const string SqlServerGetSchema = @"SELECT 
+			IC.ORDINAL_POSITION as Ordinal,
+			IC.COLUMN_NAME as ColumnName, 
+			IC.COLUMN_DEFAULT as ColumnDefault, 
+			IC.IS_NULLABLE as IsNullable, 
+			IC.DATA_TYPE as DataType,
+			IC.CHARACTER_MAXIMUM_LENGTH as DataLength,
+			IC.NUMERIC_PRECISION as NumericPrecision, 
+			IC.NUMERIC_SCALE as NumericScale, 
+			(SELECT 1 FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE as CCU WHERE 
+				CCU.COLUMN_NAME = IC.COLUMN_NAME AND 
+				CCU.TABLE_NAME = IC.TABLE_NAME AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS as TC WHERE
+					TC.CONSTRAINT_NAME = CCU.CONSTRAINT_NAME AND
+					TC.TABLE_NAME=IC.TABLE_NAME AND TC.CONSTRAINT_TYPE='PRIMARY KEY') ) as IsPrimaryKey 
+			FROM INFORMATION_SCHEMA.COLUMNS AS IC WHERE IC.TABLE_NAME=@TableName;";
+
+	}
+}
