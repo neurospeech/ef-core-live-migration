@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Akash Kava</Authors>
+    <Company>NeuroSpeech Technologies Pvt Ltd</Company>
+    <Product>EF Core Live Migration</Product>
+    <PackageLicenseUrl>https://github.com/neurospeech/ef-core-live-migration/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/neurospeech/ef-core-live-migration</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/neurospeech/ef-core-live-migration</RepositoryUrl>
+    <PackageTags>EF, Core, Live Migration</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

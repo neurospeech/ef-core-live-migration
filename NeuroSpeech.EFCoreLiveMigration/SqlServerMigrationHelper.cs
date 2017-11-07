@@ -175,17 +175,32 @@ namespace NeuroSpeech.EFCoreLiveMigration
         internal override async Task SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes)
         {
 
+
+            var allIndexes = indexes.Select(x => new SqlIndex{
+                Name = x.Relational().Name,
+                Columns = x.Properties.Select(p => p.Relational().ColumnName).ToArray()
+            });
+
+            await EnsureIndexesAsync(tableName, allIndexes);
+
+
+            
+        }
+
+        private async Task EnsureIndexesAsync(string tableName, IEnumerable<SqlIndex> allIndexes)
+        {
             var destIndexes = await GetIndexesAsync(tableName);
+            foreach (var index in allIndexes)
+            {
 
-            foreach (var index in indexes) {
-                var name = index.Relational().Name;
-
-                var columns = index.Properties.Select(p => p.Relational().ColumnName).ToArray();
+                var name = index.Name;
+                var columns = index.Columns;
 
                 var newColumns = columns.ToJoinString();
 
                 var existing = destIndexes.FirstOrDefault(x => x.Name == name);
-                if (existing != null) {
+                if (existing != null)
+                {
                     // see if all are ok...
                     var existingColumns = existing.Columns.ToJoinString();
 
@@ -205,6 +220,8 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 // lets create index...
 
                 await RunAsync($"CREATE NONCLUSTERED INDEX {name} ON {tableName} ({ newColumns })");
+
+
             }
         }
 
@@ -233,6 +250,17 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
             }
             return list;
+        }
+
+        internal override async Task SyncIndexes(string schema, string tableName, IEnumerable<IForeignKey> fkeys)
+        {
+            var allIndexes = fkeys.Select(x => new SqlIndex
+            {
+                Name = "IX" + x.Relational().Name,
+                Columns = x.Properties.Select(p => p.Relational().ColumnName).ToArray()
+            });
+
+            await EnsureIndexesAsync(tableName, allIndexes);
         }
     }
 }

@@ -38,36 +38,36 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 var columns = entity.GetProperties().Select(x => CreateColumn(x)).ToList();
 
                 var indexes = entity.GetIndexes();
-                
+
+                var fkeys = entity.GetForeignKeys();
                 
 
-                //using (var tx = new TransactionScope(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled))
-                //{
-                    try
-                    {
+                try
+                {
                         
-                        context.Database.OpenConnection();
-                        using (var tx = context.Database.GetDbConnection().BeginTransaction(System.Data.IsolationLevel.Serializable))
-                        {
-                            this.Transaction = tx;
-                            await SyncSchema(relational.Schema, relational.TableName, columns);
+                    context.Database.OpenConnection();
+                    using (var tx = context.Database.GetDbConnection().BeginTransaction(System.Data.IsolationLevel.Serializable))
+                    {
+                        this.Transaction = tx;
+                        await SyncSchema(relational.Schema, relational.TableName, columns);
 
                         await SyncIndexes(relational.Schema, relational.TableName, indexes);
 
-                            tx.Commit();
-                        }
+                        await SyncIndexes(relational.Schema, relational.TableName, fkeys);
+
+                        tx.Commit();
                     }
-                    finally {
-                        context.Database.CloseConnection();
-                    }
-                    //tx.Complete();
-                //}
+                }
+                finally {
+                    context.Database.CloseConnection();
+                }
             }
 
             
 
         }
 
+        internal abstract Task SyncIndexes(string schema, string tableName, IEnumerable<IForeignKey> fkeys);
         internal abstract Task SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes);
 
         private static SqlColumn CreateColumn(IProperty x)
