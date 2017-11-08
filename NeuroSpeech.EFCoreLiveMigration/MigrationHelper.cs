@@ -97,7 +97,13 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
         public async Task<int> RunAsync(string command, Dictionary<string, object> plist = null) {
             using (var cmd = CreateCommand(command, plist)) {
-                return await cmd.ExecuteNonQueryAsync();
+                try
+                {
+                    return await cmd.ExecuteNonQueryAsync();
+                }
+                catch (Exception ex) {
+                    throw new InvalidOperationException($"RunAsync failed for {command}", ex);
+                }
             }
         }
 
