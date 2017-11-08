@@ -18,8 +18,6 @@ namespace LiveMigrationConsole
                 
             }
 
-            Console.WriteLine("Hello World!");
-            Console.ReadLine();
         }
     }
 }

@@ -52,6 +52,9 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 if (DataLength != dest.DataLength)
                     return false;
 
+                if (IsNullable != dest.IsNullable)
+                    return false;
+
                 //if (NumericPrecision != dest.NumericPrecision)
                 //    return false;
                 //if (NumericScale != NumericScale)

@@ -79,16 +79,20 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 ColumnName = x.Relational().ColumnName,
                 DataLength = x.GetMaxLength() ?? 0,
                 DataType = x.GetColumnType(),
-                IsNullable = x.IsColumnNullable(),
+                IsNullable = x.IsNullable,
                 IsPrimaryKey = x.IsPrimaryKey()
             };
 
             var rr = x.Relational();
-            
+
 
             r.IsIdentity = x.ValueGenerated == ValueGenerated.OnAdd;
 
             r.OldNames = x.GetOldNames();
+
+            if (!x.IsNullable){
+                r.ColumnDefault = x.Relational().DefaultValueSql;
+            }
 
             return r;
         }

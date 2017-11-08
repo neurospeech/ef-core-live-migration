@@ -155,12 +155,21 @@ namespace NeuroSpeech.EFCoreLiveMigration
             }
             if (IsDecimal(c.DataType))
             {
-                name += $"({ c.NumericPrecision },{ c.NumericScale })";
+                var np = c.NumericPrecision ?? 18;
+                var nps = c.NumericScale ?? 2;
+
+                name += $"({ np },{ nps })";
             }
             if (!c.IsPrimaryKey)
             {
                 // lets allow nullable to every field...
-                name += " NULL ";
+                if (c.IsNullable)
+                {
+                    name += " NULL ";
+                }
+                else {
+                    name += " NOT NULL ";
+                }
             }
             else
             {

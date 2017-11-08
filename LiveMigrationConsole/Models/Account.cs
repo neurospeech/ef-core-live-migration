@@ -21,5 +21,9 @@ namespace LiveMigrationConsole.Models
 
         [InverseProperty(nameof(Product.Vendor))]
         public Product[] VendorProducts { get; set; }
+
+        public decimal Balance { get; set; }
+
+        public decimal? Total { get; set; }
     }
 }
