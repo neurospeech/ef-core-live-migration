@@ -27,9 +27,9 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
      
 
-        public async Task MigrateAsync() {
+        public void Migrate() {
 
-            await context.Database.EnsureCreatedAsync();
+            context.Database.EnsureCreated();
 
             foreach (var entity in context.Model.GetEntityTypes())
             {
@@ -49,11 +49,11 @@ namespace NeuroSpeech.EFCoreLiveMigration
                     using (var tx = context.Database.GetDbConnection().BeginTransaction(System.Data.IsolationLevel.Serializable))
                     {
                         this.Transaction = tx;
-                        await SyncSchema(relational.Schema, relational.TableName, columns);
+                        SyncSchema(relational.Schema, relational.TableName, columns);
 
-                        await SyncIndexes(relational.Schema, relational.TableName, indexes);
+                        SyncIndexes(relational.Schema, relational.TableName, indexes);
 
-                        await SyncIndexes(relational.Schema, relational.TableName, fkeys);
+                        SyncIndexes(relational.Schema, relational.TableName, fkeys);
 
                         tx.Commit();
                     }
@@ -67,8 +67,8 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
         }
 
-        internal abstract Task SyncIndexes(string schema, string tableName, IEnumerable<IForeignKey> fkeys);
-        internal abstract Task SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes);
+        internal abstract void SyncIndexes(string schema, string tableName, IEnumerable<IForeignKey> fkeys);
+        internal abstract void SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes);
 
         private static SqlColumn CreateColumn(IProperty x)
         {
@@ -95,11 +95,11 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
         public abstract DbCommand CreateCommand(String command, Dictionary<string, object> plist = null);
 
-        public async Task<int> RunAsync(string command, Dictionary<string, object> plist = null) {
+        public int Run(string command, Dictionary<string, object> plist = null) {
             using (var cmd = CreateCommand(command, plist)) {
                 try
                 {
-                    return await cmd.ExecuteNonQueryAsync();
+                    return cmd.ExecuteNonQuery();
                 }
                 catch (Exception ex) {
                     throw new InvalidOperationException($"RunAsync failed for {command}", ex);
@@ -107,16 +107,16 @@ namespace NeuroSpeech.EFCoreLiveMigration
             }
         }
 
-        public async Task<SqlRowSet> ReadAsync(string command, Dictionary<string, object> plist)
+        public SqlRowSet Read(string command, Dictionary<string, object> plist)
         {
             var cmd = CreateCommand(command, plist);
-            return new SqlRowSet(cmd, await cmd.ExecuteReaderAsync());
+            return new SqlRowSet(cmd, cmd.ExecuteReader());
         }
 
-        public abstract Task<List<SqlColumn>> GetCommonSchemaAsync(string name);
-        public abstract Task SyncSchema(string schema, string table, List<SqlColumn> schemaTable);
+        public abstract List<SqlColumn> GetCommonSchema(string name);
+        public abstract void SyncSchema(string schema, string table, List<SqlColumn> schemaTable);
 
-        public abstract Task<List<SqlIndex>> GetIndexesAsync(string name);
+        public abstract List<SqlIndex> GetIndexes(string name);
 
 
     }

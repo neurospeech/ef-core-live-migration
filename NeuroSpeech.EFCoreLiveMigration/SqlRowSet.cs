@@ -16,9 +16,9 @@ namespace NeuroSpeech.EFCoreLiveMigration
             this.command = command;
         }
 
-        public async Task<bool> ReadAsync()
+        public bool Read()
         {
-            return await reader.ReadAsync();
+            return reader.Read();
         }
 
         public T GetValue<T>(string name)

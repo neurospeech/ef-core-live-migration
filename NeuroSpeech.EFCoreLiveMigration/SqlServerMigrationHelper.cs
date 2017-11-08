@@ -32,18 +32,18 @@ namespace NeuroSpeech.EFCoreLiveMigration
             return cmd;
         }
 
-        public override async Task<List<SqlColumn>> GetCommonSchemaAsync(string name)
+        public override List<SqlColumn> GetCommonSchema(string name)
         {
 
 
             List<SqlColumn> columns = new List<SqlColumn>();
             string sqlColumns = Scripts.SqlServerGetSchema;
 
-            using (var reader = await ReadAsync(sqlColumns, new Dictionary<string, object> { { "@TableName", name } }))
+            using (var reader = Read(sqlColumns, new Dictionary<string, object> { { "@TableName", name } }))
             {
 
 
-                while (await reader.ReadAsync())
+                while (reader.Read())
                 {
                     SqlColumn col = new SqlColumn();
 
@@ -64,7 +64,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
             return columns;
         }
 
-        public async override Task SyncSchema(string schema, string name, List<SqlColumn> columns)
+        public override void SyncSchema(string schema, string name, List<SqlColumn> columns)
         {
 
             schema = string.IsNullOrWhiteSpace(schema) ? "dbo" : schema;
@@ -72,9 +72,9 @@ namespace NeuroSpeech.EFCoreLiveMigration
             string createTable = $"IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{name}' AND TABLE_SCHEMA = '{schema}')"
                 + $" CREATE TABLE {schema}.{name} ({ string.Join(",", columns.Where(x => x.IsPrimaryKey).Select(c => ToColumn(c))) })";
 
-            await RunAsync(createTable);
+            Run(createTable);
 
-            var destColumns = await GetCommonSchemaAsync(name);
+            var destColumns = GetCommonSchema(name);
 
             List<SqlColumn> columnsToAdd = new List<SqlColumn>();
 
@@ -96,7 +96,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                         continue;
                     }
 
-                    await RunAsync($"EXEC sp_rename '{name}.{dest.ColumnName}', '{column.ColumnName}'");
+                    Run($"EXEC sp_rename '{name}.{dest.ColumnName}', '{column.ColumnName}'");
                     dest.ColumnName = column.ColumnName;
                     
                 }
@@ -110,13 +110,13 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
                 column.CopyFrom = $"{dest.ColumnName}_{m}";
 
-                await RunAsync($"EXEC sp_rename '{name}.{dest.ColumnName}', '{column.CopyFrom}'");
+                Run($"EXEC sp_rename '{name}.{dest.ColumnName}', '{column.CopyFrom}'");
 
             }
 
             foreach (var column in columnsToAdd)
             {
-                await RunAsync($"ALTER TABLE {name} ADD " + ToColumn(column));
+                Run($"ALTER TABLE {name} ADD " + ToColumn(column));
             }
 
             Console.WriteLine($"Table {name} sync complete");
@@ -128,7 +128,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 foreach (var copy in copies)
                 {
                     var update = $"UPDATE {name} SET {copy.ColumnName} = {copy.CopyFrom};";
-                    await RunAsync(update);
+                    Run(update);
                 }
             }
         }
@@ -172,7 +172,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
             return name;
         }
 
-        internal override async Task SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes)
+        internal override void SyncIndexes(string schema, string tableName, IEnumerable<IIndex> indexes)
         {
 
 
@@ -181,15 +181,15 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 Columns = x.Properties.Select(p => p.Relational().ColumnName).ToArray()
             });
 
-            await EnsureIndexesAsync(tableName, allIndexes);
+            EnsureIndexes(tableName, allIndexes);
 
 
             
         }
 
-        private async Task EnsureIndexesAsync(string tableName, IEnumerable<SqlIndex> allIndexes)
+        private void EnsureIndexes(string tableName, IEnumerable<SqlIndex> allIndexes)
         {
-            var destIndexes = await GetIndexesAsync(tableName);
+            var destIndexes = GetIndexes(tableName);
             foreach (var index in allIndexes)
             {
 
@@ -210,7 +210,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                     // rename old index... 
                     var n = $"{name}_{System.DateTime.UtcNow.Ticks}";
 
-                    await RunAsync($"EXEC sp_rename @FromName, @ToName, @Type", new Dictionary<string, object> {
+                    Run($"EXEC sp_rename @FromName, @ToName, @Type", new Dictionary<string, object> {
                         { "@FromName", tableName + "." + name },
                         { "@ToName", n},
                         { "@Type", "INDEX" }
@@ -219,20 +219,20 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
                 // lets create index...
 
-                await RunAsync($"CREATE NONCLUSTERED INDEX {name} ON {tableName} ({ newColumns })");
+                Run($"CREATE NONCLUSTERED INDEX {name} ON {tableName} ({ newColumns })");
 
 
             }
         }
 
-        public override async Task<List<SqlIndex>> GetIndexesAsync(string name)
+        public override List<SqlIndex> GetIndexes(string name)
         {
             List<SqlIndex> list = new List<SqlIndex>();
-            using (var reader = await ReadAsync(Scripts.SqlServerGetIndexes, new Dictionary<string, object> {
+            using (var reader = Read(Scripts.SqlServerGetIndexes, new Dictionary<string, object> {
                 { "@TableName", name }
             })) {
 
-                while (await reader.ReadAsync()) {
+                while (reader.Read()) {
                     var index = new SqlIndex();
 
                     index.Name = reader.GetValue<string>("IndexName");
@@ -252,7 +252,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
             return list;
         }
 
-        internal override async Task SyncIndexes(string schema, string tableName, IEnumerable<IForeignKey> fkeys)
+        internal override void SyncIndexes(string schema, string tableName, IEnumerable<IForeignKey> fkeys)
         {
             var allIndexes = fkeys.Select(x => new SqlIndex
             {
@@ -260,7 +260,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 Columns = x.Properties.Select(p => p.Relational().ColumnName).ToArray()
             });
 
-            await EnsureIndexesAsync(tableName, allIndexes);
+            EnsureIndexes(tableName, allIndexes);
         }
     }
 }
