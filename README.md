@@ -19,26 +19,20 @@ Live Migration support for EF Core
 
 ```c#
 
-	public void Configure(IApplicationBuilder app, IHostingEnvironment env){
+public void Configure(IApplicationBuilder app, IHostingEnvironment env){
 
-		if(env.IsDevelopment()){
-			app.UseDeveloperExceptionPage();
+	if(env.IsDevelopment()){
+		app.UseDeveloperExceptionPage();
 
-			using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
-            {
-               using (var db = scope.ServiceProvider.GetRequiredService<AppModelContext>())
-               {
-
-				   	// yes we know *Async().Wait() is bad, but unfortunately there is no way
-				   	// to block in asp.net initialization
-					//
-					// We will be releasing synchronous version soon.
-
-				   	MigrationHelper.ForSqlServer(db).MigrateAsync().Wait();
-               }
-            }
+		using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+		{
+			using (var db = scope.ServiceProvider.GetRequiredService<AppModelContext>())
+			{
+				MigrationHelper.ForSqlServer(db).Migrate();
+			}
 		}
-
 	}
+
+}
 
 ```
