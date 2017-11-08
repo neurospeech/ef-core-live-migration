@@ -14,11 +14,12 @@ namespace LiveMigrationConsole
 
             using (var db = new ERPContext(options.Options)) {
 
-                MigrationHelper.ForSqlServer(db).MigrateAsync().Wait();
+                MigrationHelper.ForSqlServer(db).Migrate();
                 
             }
 
             Console.WriteLine("Hello World!");
+            Console.ReadLine();
         }
     }
 }
