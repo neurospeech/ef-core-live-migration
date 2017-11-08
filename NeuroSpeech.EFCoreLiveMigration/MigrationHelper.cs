@@ -97,7 +97,13 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
         public int Run(string command, Dictionary<string, object> plist = null) {
             using (var cmd = CreateCommand(command, plist)) {
-                return cmd.ExecuteNonQuery();
+                try
+                {
+                    return cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex) {
+                    throw new InvalidOperationException($"RunAsync failed for {command}", ex);
+                }
             }
         }
 
