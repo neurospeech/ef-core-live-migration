@@ -17,6 +17,9 @@ namespace LiveMigrationConsole.Models
 
         public DbSet<Account> Accounts { get; set; }
 
+        public DbSet<Config> Configs { get; set; }
+
+        public DbSet<Talent> Talents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

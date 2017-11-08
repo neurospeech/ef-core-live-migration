@@ -141,7 +141,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
         private string ToColumn(SqlColumn c)
         {
-            var name = $"{c.ColumnName} {c.DataType}";
+            var name = $"[{c.ColumnName}] {c.DataType}";
             if (IsText(c.DataType))
             {
                 if (c.DataLength > 0 && c.DataLength < int.MaxValue)

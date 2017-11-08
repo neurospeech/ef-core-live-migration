@@ -7,6 +7,8 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using System.Transactions;
 using System.Linq;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 
 namespace NeuroSpeech.EFCoreLiveMigration
 {
@@ -40,7 +42,13 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 var indexes = entity.GetIndexes();
 
                 var fkeys = entity.GetForeignKeys();
+
+                var pk = columns.FirstOrDefault(x => x.IsPrimaryKey);
+
+                //if(entity.)
+
                 
+
 
                 try
                 {
@@ -86,12 +94,14 @@ namespace NeuroSpeech.EFCoreLiveMigration
             var rr = x.Relational();
 
 
-            r.IsIdentity = x.ValueGenerated == ValueGenerated.OnAdd;
-
             r.OldNames = x.GetOldNames();
 
             if (!x.IsNullable){
                 r.ColumnDefault = x.Relational().DefaultValueSql;
+            }
+
+            if (x.PropertyInfo.GetCustomAttribute<DatabaseGeneratedAttribute>()?.DatabaseGeneratedOption == DatabaseGeneratedOption.Identity) {
+                r.IsIdentity = true;
             }
 
             return r;

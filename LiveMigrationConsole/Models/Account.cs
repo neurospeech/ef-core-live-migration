@@ -26,4 +26,13 @@ namespace LiveMigrationConsole.Models
 
         public decimal? Total { get; set; }
     }
+
+
+    [Table("Talents")]
+    public class Talent {
+
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public long TalentID { get; set; }
+
+    }
 }
