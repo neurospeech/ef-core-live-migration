@@ -21,9 +21,11 @@ namespace LiveMigrationConsole.Models
 
         public DbSet<Talent> Talents { get; set; }
 
+        public DbSet<ProductFeature> Features { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
+            modelBuilder.Entity<ProductFeature>().HasKey("ProductID", "FeatureID");
         }
 
     }

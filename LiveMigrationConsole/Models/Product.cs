@@ -18,4 +18,16 @@ namespace LiveMigrationConsole.Models
         public Account Vendor { get; set; }
 
     }
+
+
+    [Table("ProductFeatures")]
+    public class ProductFeature {
+
+        //[Key, Column( Order = 1)]
+        public long ProductID { get; set; }
+
+        [MaxLength(20)]
+        public string FeatureID { get; set; }
+
+    }
 }

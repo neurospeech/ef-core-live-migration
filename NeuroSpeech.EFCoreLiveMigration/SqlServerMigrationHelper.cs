@@ -68,9 +68,11 @@ namespace NeuroSpeech.EFCoreLiveMigration
         {
 
             schema = string.IsNullOrWhiteSpace(schema) ? "dbo" : schema;
+
+            var pkeys = columns.Where(x => x.IsPrimaryKey).ToList();
             
             string createTable = $"IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{name}' AND TABLE_SCHEMA = '{schema}')"
-                + $" CREATE TABLE {schema}.{name} ({ string.Join(",", columns.Where(x => x.IsPrimaryKey).Select(c => ToColumn(c))) })";
+                + $" CREATE TABLE {schema}.{name} ({ string.Join(",", pkeys.Select(c => ToColumn(c))) }, PRIMARY KEY( { string.Join(", ", pkeys.Select(x=> "["  + x.ColumnName + "]")) } ))";
 
             Run(createTable);
 
@@ -173,7 +175,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
             }
             else
             {
-                name += " PRIMARY KEY ";
+                //name += " PRIMARY KEY ";
                 if (c.IsIdentity) {
                     name += " Identity ";
                 }
