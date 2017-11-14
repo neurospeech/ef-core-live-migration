@@ -49,8 +49,11 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 if (!DataType.Equals(dest.DataType, StringComparison.OrdinalIgnoreCase))
                     return false;
 
-                if (DataLength != dest.DataLength)
-                    return false;
+                if (DataLength > 0 && dest.DataLength > 0)
+                {
+                    if (DataLength != dest.DataLength)
+                        return false;
+                }
 
                 if (IsNullable != dest.IsNullable)
                     return false;
