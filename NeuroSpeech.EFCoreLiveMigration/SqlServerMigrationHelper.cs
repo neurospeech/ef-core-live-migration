@@ -207,7 +207,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
                 var name = index.Name;
                 var columns = index.Columns;
 
-                var newColumns = columns.ToJoinString();
+                var newColumns = columns.Select(x => $"{x} ASC").ToJoinString();
 
                 var existing = destIndexes.FirstOrDefault(x => x.Name == name);
                 if (existing != null)
