@@ -256,7 +256,7 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
                 list = list.GroupBy(x => x.Name).Select(x => new SqlIndex {
                     Name = x.Key,
-                    Columns = x.SelectMany( c => c.Columns ).ToArray()
+                    Columns = x.SelectMany( c => c.Columns ).Select( c => $"[{c}]" ).ToArray()
                 }).ToList();
 
             }
