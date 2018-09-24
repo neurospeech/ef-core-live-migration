@@ -1,7 +1,6 @@
 ﻿using LiveMigrationConsole.Models;
 using Microsoft.EntityFrameworkCore;
 using NeuroSpeech.EFCoreLiveMigration;
-using System;
 
 namespace LiveMigrationConsole
 {
