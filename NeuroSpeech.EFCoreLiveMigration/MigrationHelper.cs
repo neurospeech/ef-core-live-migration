@@ -45,6 +45,12 @@ namespace NeuroSpeech.EFCoreLiveMigration
 
                 var pk = columns.FirstOrDefault(x => x.IsPrimaryKey);
 
+                if (pk == null)
+                {
+                    // do not generate for views
+                    continue;
+                }
+
                 //if(entity.)
 
                 
