@@ -1,3 +1,5 @@
+# Moved to https://github.com/neurospeech/asp-net-core-extensions
+
 # ef-core-live-migration
 Live Migration support for EF Core
 
