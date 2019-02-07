@@ -8,7 +8,7 @@ using System.Text;
 
 namespace NeuroSpeech.EFCoreLiveMigration
 {
-    public static class StringExtensions
+    internal static class StringExtensions
     {
 
         public static bool ContainsIgnoreCase(this string text, string test) {
